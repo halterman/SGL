@@ -5,7 +5,7 @@
  *  thinly wrapping GLUT.
  *  @author Richard L. Halterman
  *
- *  Copyright (c) 2010, Richard L. Halterman
+ *  Copyright (c) 2017, Richard L. Halterman
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with 
@@ -44,11 +44,12 @@
  */
 
 
-#ifndef _SGL_H_
-#define _SGL_H_
+#ifndef SGL_H_
+#define SGL_H_
 
 #ifdef _MSC_VER
     #pragma warning(disable:4251)
+    #pragma warning(disable:4224)
 #endif
 
 #include <iostream>
@@ -57,26 +58,21 @@
 #include <string>
 #include <ctime>
 #include <fstream>
+#include <functional>
 
-using std::list;
-using std::vector;
-using std::string;
-using std::ifstream;
 
 /**
  *  All client accessible classes, functions, and constants
  *  reside in the sgl namespace.
  */
-namespace sgl
-{
+namespace sgl {
 
 /**
  *  A Point object represents a location within
  *  a Window's viewport.  The (x,y) values are
  *  given in viewport coordinates.
  */
-struct Point
-{
+struct Point {
 	/**  The x coordinate of the point's location.  */
 	double x;
 
@@ -84,10 +80,10 @@ struct Point
 	double y;
 
 	/**  Initializes the points coordinates.
-	 *   @param _x the x coordinate of the new point's location.
-	 *   @param _y the y coordinate of the new point's location.
+	 *   @param x the x coordinate of the new point's location.
+	 *   @param y the y coordinate of the new point's location.
 	 */
-	Point(double _x, double _y): x(_x), y(_y) {}
+	Point(double x, double y): x(x), y(y) {}
 
 	/**  This default constructor makes a point at the origin
 	 *   (0,0). 
@@ -99,8 +95,7 @@ struct Point
  *  A Color object represents an RGB color.
  *  Color objects are immutable.
  */
-class Color
-{
+class Color {
 public:
 	/**  The red component of the color  */
 	double red;
@@ -136,19 +131,17 @@ public:
  *  MouseButton is an enumerated type that maps directly to the
  *  GLUT equivalents for the corresponding mouse buttons.
  */
-enum MouseButton 
-{ 
-    LEFT_BUTTON = 0, 
-    RIGHT_BUTTON = 2, 
-    UNKNOWN_BUTTON = -1 
+enum class MouseButton { 
+    Left = 0, 
+    Right = 2, 
+    Unknown = -1 
 };
 
 /**
  *  SpecialKey is an enumerated type that maps directly to the
  *  GLUT equivalents for the corresponding special keys.
  */
-enum SpecialKey 
-{ 
+enum SpecialKey { 
     F1_KEY = 10001, 
     F2_KEY, 
     F3_KEY, 
@@ -175,37 +168,36 @@ enum SpecialKey
 /**
  *  Cursor shapes map directly to the GLUT equivalents.
  */
-enum CursorShape 
-{ 
-    CURSOR_RIGHT_ARROW = 0,
-    CURSOR_LEFT_ARROW,
+enum class CursorShape { 
+    Right_arrow = 0,
+    Left_arrow,
     /* Symbolic cursor shapes. */
-    CURSOR_INFO,
-    CURSOR_DESTROY,
-    CURSOR_HELP,
-    CURSOR_CYCLE,
-    CURSOR_SPRAY,
-    CURSOR_WAIT,
-    CURSOR_TEXT,
-    CURSOR_CROSSHAIR,
+    Info,
+    Destroy,
+    Help,
+    Cycle,
+    Spray,
+    Wait,
+    Text,
+    Crosshair,
     /* Directional cursors. */
-    CURSOR_UP_DOWN,
-    CURSOR_LEFT_RIGHT,
+    Up_down,
+    Left_right,
     /* Sizing cursors. */
-    CURSOR_TOP_SIDE,
-    CURSOR_BOTTOM_SIDE,
-    CURSOR_LEFT_SIDE,
-    CURSOR_RIGHT_SIDE,
-    CURSOR_TOP_LEFT_CORNER,
-    CURSOR_TOP_RIGHT_CORNER,
-    CURSOR_BOTTOM_RIGHT_CORNER,
-    CURSOR_BOTTOM_LEFT_CORNER,
+    Top_side,
+    Bottom_side,
+    Left_side,
+    Right_side,
+    Top_left_corner,
+    Top_right_corner,
+    Bottom_right_corner,
+    Bottom_left_corner,
     /* Inherit from parent window. */
-    CURSOR_INHERIT = 100,
+    Inherit = 100,
     /* Blank cursor. */
-    CURSOR_NONE,
+    None,
     /* Fullscreen crosshair (if available). */
-    CURSOR_FULL_CROSSHAIR
+    Full_crosshair
 };
 
 /**
@@ -214,12 +206,11 @@ enum CursorShape
  *  These can be combined with bitwise OR to represent combinations such as
  *  CTRL-ALT.
  */
-enum KeyModifier 
-{ 
-    NO_KEY_MODIFIER = 0, 
-    SHIFT_KEY_MODIFIER = 1, 
-    CTRL_KEY_MODIFIER = 2, 
-    ALT_KEY_MODIFIER = 4 
+enum class KeyModifier { 
+    NO_KEY = 0, 
+    SHIFT_KEY = 1, 
+    CTRL_KEY = 2, 
+    ALT_KEY = 4 
 };
 
 class Window;        //  Forward reference
@@ -230,8 +221,7 @@ class ObjectWindow;  //  Forward reference
  *   Represents a persistent graphical object used within a window.
  *   A graphical object is owned by a particular window.
  */
-class GraphicalObject
-{
+class GraphicalObject {
 private:
     /**  Used to generate a unique ID for each graphical object  */
     static unsigned id_source;
@@ -527,8 +517,7 @@ extern const Color BLACK, RED, GREEN, BLUE, YELLOW, MAGENTA, CYAN, WHITE,
  *  graphical objects, but the derived class ObjectWindow
  *  does.
  */
-class Window
-{
+class Window {
 protected:
 	//  Extents of window in viewport coordinates
 	/**  The smallest x value representing the left-most position
@@ -574,7 +563,7 @@ protected:
 	 *               within the viewport
 	 *  @return nothing
 	 */
-	void initialize(const char *title, int left, int top, int width, int height, 
+	void initialize(const std::string& title, int left, int top, int width, int height, 
 		            double min_x, double max_x, double min_y, double max_y);
 
 public:
@@ -601,22 +590,19 @@ public:
 	 *  @param max_y the largest y value representing the top-most position
 	 *               within the viewport
 	 */
-	Window(const char *title, int left, int top, int width, int height, 
+	Window(const std::string& title, int left, int top, int width, int height, 
 		   double min_x, double max_x, double min_y, double max_y);
 
 	/**
-	 *  Creates a window with a default position and size.
+	 *  Creates a window with a default position.
 	 *  After intializing instrance variables, the constructor defers 
 	 *  the actual work to the initialize method.  The virtual
      *  viewport's range is 0.0...width by 0.0...height.
-	 *  @param left the x coordinate in screen coordinates of the window's 
-	 *         left-top corner 
-	 *  @param top the y coordinate in screen coordinates of the window's 
-	 *         left-top corner  
+     *  @param title the text to appear within the window's titlebar
 	 *  @param width the width in screen coordinates of the window
 	 *  @param height the height in screen coordinates of the window
 	 */
-	Window(const char *title, int width, int height);
+	Window(const std::string&  title, int width, int height);
 
 
 	/**
@@ -633,7 +619,7 @@ public:
 	 *  @param max_y the largest y value representing the top-most position
 	 *               within the viewport
 	 */
-	Window(const char *title, double min_x, double max_x, double min_y, double max_y);
+	Window(const std::string& title, double min_x, double max_x, double min_y, double max_y);
 
 	/**
 	 *  Create a default, plain window
@@ -658,7 +644,7 @@ public:
 	 *  @param str the text of the new title
 	 *  @return nothing
 	 */
-    virtual void set_title(const char *str);
+    virtual void set_title(const std::string& str);
 
 	/**
 	 *  Sets the background color of the window's viewport.
@@ -982,22 +968,22 @@ typedef void (Window::*WindowCallback)();
  *  Implements a popup menu.  Each popup menu must be
  *  associated with a particular window.
  */
-class PopupMenu
-{
+class PopupMenu {
 protected:
     /**  The window associated with this popup menu */
     Window *window;
 
-    struct MenuItem
-    {
-        const char *name;
+    struct MenuItem {
+        //const char *name;
+        std::string name;
         WindowCallback code;
-        MenuItem(const char *name, WindowCallback code):
+        //MenuItem(const char *name, WindowCallback code):
+        MenuItem(const std::string& name, WindowCallback code):
               name(name), code(code) {}
     };
 	
 	/**  Collection of menu items  */
-	vector<MenuItem> items;
+	std::vector<MenuItem> items;
 
 	/** Calls the proper handler for the user's selection  */
 	static void process_menu_events(int option);
@@ -1023,7 +1009,8 @@ public:
 	 *              menu item
 	 *  @return nothing
 	 */
-	virtual void _add_menu_item(const char *item, WindowCallback func);
+	//virtual void _add_menu_item(const char *item, WindowCallback func);
+	virtual void _add_menu_item(const std::string& item, WindowCallback func);
 
 	/**
 	 *  Replaces one menu item and its associated handler with another.
@@ -1034,8 +1021,8 @@ public:
 	 *  @param func the replacement handler for this menu item
 	 *  @return nothing
 	 */
-	virtual void _replace_menu_item(const char *old_name, 
-		                            const char *new_name, 
+	virtual void _replace_menu_item(const std::string& old_name, 
+		                            const std::string& new_name, 
 				  				    WindowCallback func);
 
 	/**
@@ -1044,7 +1031,8 @@ public:
 	 *  @param item a string listed for the current menu choice
 	 *  @return nothing
 	 */
-	virtual void remove_menu_item(const char *item);
+	//virtual void remove_menu_item(const char *item);
+	virtual void remove_menu_item(const std::string& item);
 
 	/**
 	 *  Invokes the proper handler when the user selects an item in 
@@ -1061,11 +1049,10 @@ public:
  *  The class representing window objects that can contain
  *  graphical objects that the user can manipulate.
  */
-class ObjectWindow: public Window
-{
+class ObjectWindow: public Window {
 protected:
 	/**  The list of graphical objects contained in this window.  */
-	list<GraphicalObject *> object_list;
+	std::list<GraphicalObject *> object_list;
     GraphicalObject *active_object;
 
 public:
@@ -1088,7 +1075,7 @@ public:
 	 *  @param max_y the largest y value representing the top-most position
 	 *               within the viewport
 	 */
-	ObjectWindow(const char *title, int left, int top, int width, 
+	ObjectWindow(const std::string& title, int left, int top, int width, 
                  int height, double min_x, double max_x, 
                  double min_y, double max_y);
 
@@ -1098,7 +1085,7 @@ public:
 	 *  @param width the width in screen coordinates of the window
 	 *  @param height the height in screen coordinates of the window
 	 */
-	ObjectWindow(const char *title, int width, int height);
+	ObjectWindow(const std::string& title, int width, int height);
 
 
 	/**
@@ -1113,7 +1100,7 @@ public:
 	 *  @param max_y the largest y value representing the top-most position
 	 *               within the viewport
 	 */
-	ObjectWindow(const char *title, double min_x, double max_x, 
+	ObjectWindow(const std::string& title, double min_x, double max_x, 
                  double min_y, double max_y);
 
 	/**
@@ -1124,19 +1111,19 @@ public:
 	/**
 	 *  Destroys a graphical window object.
 	 */
-	virtual ~ObjectWindow();
+	~ObjectWindow();
 
 	/**  
 	 *  Code executed before the call to paint
 	 *  @return nothing
 	 */
-	virtual void prepaint();
+	void prepaint() override;
 
 	/**
 	 *  Code executed after the call to paint
 	 *  @return nothing
 	 */
-	virtual void postpaint();
+	void postpaint() override;
 
 	/**
 	 *  Called by the event loop when the user depresses any mouse
@@ -1151,7 +1138,7 @@ public:
 	 *         or right (RIGHT_BUTTON) during the current mouse event.
 	 *  @return nothing
 	 */
-	virtual void mouse_pressed(double x, double y, MouseButton button);
+	void mouse_pressed(double x, double y, MouseButton button) override;
 
 	/**
 	 *  Called by the event manager when the user releases any mouse
@@ -1166,7 +1153,7 @@ public:
 	 *         or right (RIGHT_BUTTON) during the current mouse event.
 	 *  @return nothing
 	 */
-	virtual void mouse_released(double x, double y, MouseButton button);
+	void mouse_released(double x, double y, MouseButton button) override;
 
 	/**
 	 *  Called by the event manager when the user moves the mouse
@@ -1180,7 +1167,7 @@ public:
 	 *           the most recent mouse event.
 	 *  @return nothing
 	 */
-	virtual void mouse_moved(double x, double y);
+	void mouse_moved(double x, double y) override;
 
 	/**
 	 *  Called by the event manager when the user drags the mouse
@@ -1195,7 +1182,7 @@ public:
 	 *           the most recent mouse event.
 	 *  @return nothing
 	 */
-	virtual void mouse_dragged(double x, double y);
+	void mouse_dragged(double x, double y) override;
 
 	/**
 	 *  Called by the event manager when the user types a key
@@ -1209,7 +1196,7 @@ public:
 	 *           location of the mouse pointer within the window
 	 *  @return nothing
 	 */
-	virtual void key_pressed(int k, double x, double y);
+	void key_pressed(int k, double x, double y) override;
 
 	/**
 	 *  Adds a graphical object to the window.
@@ -1254,7 +1241,7 @@ public:
      *  @return  an iterator to the begining of the vector of 
      *           graphical objects this window contains.
      */
-    list<GraphicalObject *>::iterator begin();
+    std::list<GraphicalObject *>::iterator begin();
 
     /**
      *  Returns an iterator just past the end of the vector of 
@@ -1262,7 +1249,7 @@ public:
      *  @return  an iterator just past the end of the vector of 
      *           graphical objects this window contains.
      */
-    list<GraphicalObject *>::iterator end();
+    std::list<GraphicalObject *>::iterator end();
 };
 
 
@@ -1271,11 +1258,10 @@ public:
  *  graphical objects (even other composite objects
  *  into a single graphical object.
  */
-class CompositeObject: public GraphicalObject
-{
+class CompositeObject: public GraphicalObject {
 protected:
     /**  The collection of contained graphical objects. */
-    vector<GraphicalObject *> objects;
+    std::vector<GraphicalObject *> objects;
 public:
     /**
      *  The constructor makes an initially empty 
@@ -1288,14 +1274,14 @@ public:
      *  object.
      *  @return nothing.
      */
-    void paint() const;
+    void paint() const override;
 
     /**
      *  Repositions the lower-left corner of the composite object's
      *  boundng box to (x,y).  The positions of the contained
      *  graphical objects are updated accordingly.
      */
-    void move_to(double x, double y);
+    void move_to(double x, double y) override;
 
     /**
      *  Adds a graphical object to this container.  Adjusts
@@ -1317,12 +1303,10 @@ public:
  *  J. J. Rajnovich, June 05, 2002
  */
 
-class Pixmap 
-{
+class Pixmap {
     //  Local type represents a color triple, each with 256 
     //  possible intensities
-    struct RGB 
-    {
+    struct RGB {
         unsigned char red, green, blue;
     };
 
@@ -1333,7 +1317,7 @@ class Pixmap
      *         the input.
      *  @return the value extracted from the input stream
      */
-    static unsigned short get_short(ifstream& fin);
+    static unsigned short get_short(std::ifstream& fin);
 
     /**
      *  Helper function for extracting an unsigned long
@@ -1342,7 +1326,7 @@ class Pixmap
      *         the input.
      *  @return the value extracted from the input stream
      */
-    static unsigned long get_long(ifstream& fin);
+    static unsigned long get_long(std::ifstream& fin);
 
     /**
      *  Helper function for determining if an integer
@@ -1390,8 +1374,7 @@ public :
  *  dimensions that must be binary powers.
  */
 
-class BitmapObject: public GraphicalObject
-{
+class BitmapObject: public GraphicalObject {
     Pixmap pix;
     unsigned int texture_id;
 public:
@@ -1423,8 +1406,7 @@ public:
  *  The class representing window objects that bypass
  *  SGL and use OpenGL and GLUT routines directly.
  */
-class OGLWindow: public Window
-{
+class OGLWindow: public Window {
 public:
 	/**
 	 *  Constructor that provides the most control to the client.
@@ -1437,30 +1419,34 @@ public:
 	 *  @param width the width in screen coordinates of the window
 	 *  @param height the height in screen coordinates of the window
 	 */
-	OGLWindow(const char *title, int left, int top, int width, int height);
+	//OGLWindow(const char *title, int left, int top, int width, int height);
+	OGLWindow(const std::string& title, int left, int top, int width, int height);
 
 	/**
 	 *  Creates a window with a default position and size.
      *  @param title the text to appear within the window's titlebar
 	 */
-	OGLWindow(const char *title);
+	//OGLWindow(const char *title);
+	OGLWindow(const std::string& title);
+
+    // TODO add deleted copy ctor, assignment, etc.
 
 	/**
 	 *  Destroys a graphical window object.
 	 */
-	virtual ~OGLWindow();
+	~OGLWindow();
 
 	/**  
 	 *  Code executed before the call to paint
 	 *  @return nothing
 	 */
-	virtual void prepaint();
+    void prepaint() override;
 
 	/**
 	 *  Code executed after the call to paint
 	 *  @return nothing
 	 */
-	virtual void postpaint();
+	void postpaint() override;
 
 };
 
@@ -1473,8 +1459,7 @@ public:
  *  Used to draw decimal digits that look like
  *  LED/LCD seven-segment displays
  */
-class SevenSegmentDigit
-{
+class SevenSegmentDigit {
 protected:
     /** The current digit's value.  */
     int current_value;
@@ -1597,8 +1582,7 @@ public:
 /**
  *  A graphical object wrapper for a seven-segment digit display.
  */
-class DisplayDigit: public GraphicalObject
-{
+class DisplayDigit: public GraphicalObject {
 protected:
     /**  The wrapper seven-segment digit display.  */
     SevenSegmentDigit led;
@@ -1615,7 +1599,7 @@ public:
     DisplayDigit(Color color, double x, double y, double height);
 
     /**  Draws the digit. */
-    void paint() const;
+    void paint() const override;
 
     /**
      *  Set's the value of the digit.
@@ -1659,7 +1643,7 @@ public:
      *  @param y the new y coordinate of the digit's lower-left corner.
      *  @return nothing
      */
-    void mouse_dragged(double x, double y);
+    void mouse_dragged(double x, double y) override;
 };
 
 
@@ -1668,8 +1652,7 @@ public:
  *  A graphical object representing a two-digit
  *  seven-segment display.
  */
-class DoubleDigit: public GraphicalObject
-{
+class DoubleDigit: public GraphicalObject {
 protected:
     /**  The tens digit.  */
     SevenSegmentDigit tens;
@@ -1697,7 +1680,7 @@ public:
     DoubleDigit(Color color, double x, double y, double height);
 
     /**  Draws the digits. */
-    void paint() const;
+    void paint() const override;
 
     /**
      *  Set's the value of the digits.
@@ -1742,7 +1725,7 @@ public:
      *           corner.
      *  @return nothing
      */
-    void mouse_dragged(double x, double y);
+    void mouse_dragged(double x, double y) override;
 
     /**
      *  Turns on or off the display of a leading zero.
@@ -1766,11 +1749,10 @@ public:
  *  A graphical object representing a multi-digit
  *  seven-segment display.
  */
-class Multidigit: public GraphicalObject
-{
+class Multidigit: public GraphicalObject {
 protected:
     /**  Vector of seven segment digits  */
-    vector<SevenSegmentDigit> digits;
+    std::vector<SevenSegmentDigit> digits;
 
     // /** Dynamic array of seven segment digits  */
     // SevenSegmentDigit *digits;
@@ -1801,7 +1783,7 @@ public:
     Multidigit(int n, Color color, double x, double y, double height);
 
     /**  Draws the digits. */
-    void paint() const;
+    void paint() const override;
 
     /**
      *  Set's the value of the display.
@@ -1845,7 +1827,7 @@ public:
      *           corner.
      *  @return nothing
      */
-    void mouse_dragged(double x, double y);
+    void mouse_dragged(double x, double y) override;
 
 	/**
 	 *  Relocates the left-bottom corner of the display
@@ -1859,7 +1841,7 @@ public:
 	 *               display
 	 *  @return nothing
 	 */  
-    virtual void move_to(double left, double bottom);
+    virtual void move_to(double left, double bottom) override;
 
     /**
      *  Turns on or off the display of leading zeros.
@@ -1879,8 +1861,7 @@ public:
 };
 
 
-class TimeDisplay: public GraphicalObject
-{
+class TimeDisplay: public GraphicalObject {
 protected:
     /**  The hours unit tens digit.  */
     SevenSegmentDigit hours_tens;
@@ -1940,7 +1921,7 @@ public:
     /**  Draws the display. 
      *  @return nothing
      */
-    void paint() const;
+    void paint() const override;
 
     /**
      *  Sets the time.
@@ -1984,7 +1965,7 @@ public:
      *           corner.
      *  @return nothing
      */
-    void mouse_dragged(double x, double y);
+    void mouse_dragged(double x, double y) override;
 
     /**
      *  Moves the display to a new location.  The display's 
@@ -1995,7 +1976,7 @@ public:
      *           corner.
      *  @return nothing
      */
-    void move_to(double x, double y);
+    void move_to(double x, double y) override;
 
 
     /**
@@ -2172,7 +2153,7 @@ void fill_circle(double x, double y, double radius);
  *             adjacent in the vector.
  *  @return nothing
  */
-void draw_polygon(const vector<Point>& pts);
+void draw_polygon(const std::vector<Point>& pts);
 
 /**
  *  Draws the outline of a polygon specified by the points
@@ -2195,7 +2176,7 @@ void draw_polygon(const Point *pts, int n);
  *             adjacent in the vector.
  *  @return nothing
  */
-void fill_polygon(const vector<Point>& pts);
+void fill_polygon(const std::vector<Point>& pts);
 
 /**
  *  Draws a filled polygon specified by the points
@@ -2221,7 +2202,8 @@ void fill_polygon(const Point *pts, int n);
  *           of the text's baseline
  *  @param font_size the size of the font: 10, 12, or 18.
  */
-void draw_text(const char *text, double x, double y, int font_size);
+//void draw_text(const char *text, double x, double y, int font_size);
+void draw_text(const std::string& text, double x, double y, int font_size);
 
 /**
  *  Draw a piece of graphical text in the window.  This version of
@@ -2236,7 +2218,8 @@ void draw_text(const char *text, double x, double y, int font_size);
  *  @param scale the scale of the font; this generally will be 
  *           value less than one (for example, 0.1 or 0.25).
  */
-void draw_text(const char *text, double x, double y, double scale);
+//void draw_text(const char *text, double x, double y, double scale);
+void draw_text(const std::string& text, double x, double y, double scale);
 
 /**
  *  Returns the length of the graphical text in units of 
@@ -2246,7 +2229,8 @@ void draw_text(const char *text, double x, double y, double scale);
  *  @return the length of the graphical text in units of 
  *          the viewport coordinate system.
  */
-double text_width(const char *text, int font_size);
+//double text_width(const char *text, int font_size);
+double text_width(const std::string& text, int font_size);
 
 /**
  *  Draws a 2-D mathematical function, f(x).  Plots the line 
@@ -2346,8 +2330,7 @@ int random(int n);
  *  Implements stopwatch objects that can be used to 
  *  measure elapsed clock time in an executing program.  
  */
-class Stopwatch
-{
+class Stopwatch {
 protected:
     /**  The starting time */
     clock_t start_time;
@@ -2440,8 +2423,7 @@ bool equals(double d1, double d2, double delta);
  *  @param i the integer to convert
  *  @return the string representation of i
  */
-//string to_string(int i);
-const char *to_string(int i);
+std::string to_string(int i);
 
 /**
  *  Converts a double to a string so it can be displayed
@@ -2449,24 +2431,120 @@ const char *to_string(int i);
  *  @param d the double to convert
  *  @return the string representation of d
  */
-//string to_string(double d);
-const char *to_string(double d);
-
+std::string to_string(double d);
 
 
 /**
  *  Returns the SGL version number of this library.
  */
-const char *version();
+std::string version();
+
+
+//------------------------------------------------------------------------------------------
+// Procedural interface to the SGL
+
+/**
+ *  Creates a graphics window for the SGL's procedural interface.  Clients
+ *  need not derive a custom Window class and override methods.  Clients using
+ *  the procedural interface control the application's state through global 
+ *  variables rather than instance variables.  Clients must call this function
+ *  before registering any callbacks calling <tt>run_window</tt>.
+ *  @param title the text to appear in the window's title bar
+ *  @param x the x component of the (x, y) location of the window's left-top corner
+ *  @param y the y component of the (x, y) location of the window's left-top corner
+ *  @param width the window's width
+ *  @param height the window's height
+ *  @return nothing
+ */
+void create_window(const std::string& title, int x, int y, int width, int height);
+
+/**
+ *  Starts the graphical event loop for a window created via 
+ *  create_window.  Used for the SGL's procedural interface. 
+ *  @return nothing
+ */
+void run_window();
+
+/**
+ *  Requests the graphical framework to repaint the window.
+ *  Used for the SGL's procedural interface.  Schedules the
+ *  application's painting callback for execution.
+ *  @return nothing
+ */
+void update_window();
+
+/**
+ *  Registers the client's custom painting callback function with the graphical 
+ *  window.  Used for the SGL's procedural interface. 
+ *  @param f the client's callback function
+ *  @return nothing
+ */
+void set_paint_function(const std::function<void()>& f);
+
+/**
+ *  Registers the client's custom mouse pressed callback function with the graphical 
+ *  window.  Used for the SGL's procedural interface. 
+ *  @param f the client's callback function
+ *  @return nothing
+ */
+void set_mouse_pressed_function(const std::function<void(double, double, MouseButton)>& f);
+
+/**
+ *  Registers the client's custom mouse released callback function with the graphical 
+ *  window.  Used for the SGL's procedural interface. 
+ *  @param f the client's callback function
+ *  @return nothing
+ */
+void set_mouse_released_function(const std::function<void(double, double, MouseButton)>& f);
+
+/**
+ *  Registers the client's custom mouse moved callback function with the graphical 
+ *  window.  Used for the SGL's procedural interface. 
+ *  @param f the client's callback function
+ *  @return nothing
+ */
+void set_mouse_moved_function(const std::function<void(double, double)>& f);
+
+/**
+ *  Registers the client's custom mouse dragged callback function with the graphical 
+ *  window.  Used for the SGL's procedural interface. 
+ *  @param f the client's callback function
+ *  @return nothing
+ */
+void set_mouse_dragged_function(const std::function<void(double, double)>& f);
+
+/**
+ *  Registers the client's custom keypress callback function with the graphical 
+ *  window.  Used for the SGL's procedural interface. 
+ *  @param f the client's callback function
+ *  @return nothing
+ */
+void set_key_pressed_function(const std::function<void(int, double, double)>& f);
+
+/**
+ *  Changes the background color of the graphics window.  Client must call 
+ *  <tt>update_window</tt> to force the repainting for it to take effect.
+ *  Used for the SGL's procedural interface. 
+ *  @param c the desired background color
+ *  @return nothing
+ */
+void set_window_background(const Color& c);
+
+/**
+ *  Sets the title of the window.  Used for the SGL's procedural interface. 
+ *  @param str the text of the new title
+ *  @return nothing
+ */
+void set_window_title(const std::string& str);
+
 
 
 }  //  End of namespace sgl
 
 //  Some syntactic sugar for adding items to popup menus
-#define POPUPCALLBACK(x) (static_cast<WindowCallback>(x))
-#define add_menu_item(x, y) _add_menu_item((x), (static_cast<WindowCallback>(y)));
-#define replace_menu_item(x, y, z) _replace_menu_item((x), (y), (static_cast<WindowCallback>(z)));
+#define POPUPCALLBACK(x) (static_cast<sgl::WindowCallback>(x))
+#define add_menu_item(x, y) _add_menu_item((x), (static_cast<sgl::WindowCallback>(y)));
+#define replace_menu_item(x, y, z) _replace_menu_item((x), (y), (static_cast<sgl::WindowCallback>(z)));
 
 
 #endif
-
