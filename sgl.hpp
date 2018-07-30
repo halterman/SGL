@@ -5,9 +5,9 @@
  *  thinly wrapping GLUT.
  *  @author Richard L. Halterman
  *
- *  Last modified 2017-10-13
+ *  Last modified 2018-07-29
  *
- *  Copyright (c) 2010-2017, Richard L. Halterman
+ *  Copyright (c) 2010-2018, Richard L. Halterman
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with 
@@ -77,7 +77,7 @@
  */
 namespace sgl {
 
-static const std::string SGL_VERSION_NUMBER = "0.9.0 (October 13, 2017)";
+static const std::string SGL_VERSION_NUMBER = "0.9.2 (July 29, 2018)";
 
 
 static bool glut_active = false;
@@ -2870,6 +2870,21 @@ int get_screen_width() {
  */
 int get_screen_height() {
 	return glutGet(GLUT_SCREEN_HEIGHT);
+}
+
+/**
+ *  Creates an SGL window of type T passing the arguments 
+ *  found in the Args parameter to the window's constructor.  
+ *  Calls the window's run method to start the application.
+ *  @tparam T the type of SGL window to create
+ *  @tparam Args the argument pack to pass to the window's constructor
+ *  @param args the instantiated parameters to pass to the
+ *  window's constructor
+ */
+template <typename T, typename... Args>
+inline void run(Args&&... args) {
+    //std::make_shared<T>(args...)->run();
+    T{args...}.run();
 }
 
 

@@ -5,7 +5,7 @@
  *  thinly wrapping GLUT.
  *  @author Richard L. Halterman
  *
- *  Copyright (c) 2017, Richard L. Halterman
+ *  Copyright (c) 2010-2018, Richard L. Halterman
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with 
@@ -2271,6 +2271,19 @@ void set_color(double r, double g, double b);
  *  @return nothing
  */
 void set_line_width(double width);
+
+
+/**
+ *  Creates an SGL window of type T passing the arguments 
+ *  found in the Args parameter to the window's constructor.  
+ *  Calls the window's run method to start the application.
+ *  @tparam T the type of SGL window to create
+ *  @tparam Args the argument pack to pass to the window's constructor
+ *  @param args the instantiated parameters to pass to the
+ *  window's constructor
+ */
+template <typename T, typename... Args>
+inline void run(Args&&... args);
 
 /****************************************************
  *   Miscellaneous utility functions
