@@ -231,11 +231,11 @@ protected:
     ObjectWindow *window;
 
     /**  Location of the mouse pointer's x coordinate relative to the graphical
-      *  object's bounding box  */
+     *   object's bounding box  */
     double x_hit_offset;
 	
 	/**  Location of the mouse pointer's y coordinate relative to the graphical
-      *  object's bounding box  */
+     *   object's bounding box  */
 	double y_hit_offset;
 
 	/**  x coordinate of the left-bottom corner of the graphical 
@@ -1003,14 +1003,14 @@ public:
 	/**
 	 *  Adds specifies which method to call for a given menu item.
 	 *  Clients ordinarily will use the add_menu_item macro (no leading
-	 *  underscore) so a messy type cast is no necessary.
+	 *  "m_" in the name) so a messy type cast is not necessary.
 	 *  @param item a string listed for the menu choice
 	 *  @param func a method to call when the user selects the given
 	 *              menu item
 	 *  @return nothing
 	 */
-	//virtual void _add_menu_item(const char *item, WindowCallback func);
-	virtual void _add_menu_item(const std::string& item, WindowCallback func);
+	//virtual void m_add_menu_item(const char *item, WindowCallback func);
+	virtual void m_add_menu_item(const std::string& item, WindowCallback func);
 
 	/**
 	 *  Replaces one menu item and its associated handler with another.
@@ -1021,7 +1021,7 @@ public:
 	 *  @param func the replacement handler for this menu item
 	 *  @return nothing
 	 */
-	virtual void _replace_menu_item(const std::string& old_name, 
+	virtual void m_replace_menu_item(const std::string& old_name, 
 		                            const std::string& new_name, 
 				  				    WindowCallback func);
 
@@ -2461,7 +2461,7 @@ std::string version();
  *  need not derive a custom Window class and override methods.  Clients using
  *  the procedural interface control the application's state through global 
  *  variables rather than instance variables.  Clients must call this function
- *  before registering any callbacks calling <tt>run_window</tt>.
+ *  before registering any callbacks and before calling <tt>run_window</tt>.
  *  @param title the text to appear in the window's title bar
  *  @param x the x component of the (x, y) location of the window's left-top corner
  *  @param y the y component of the (x, y) location of the window's left-top corner
@@ -2556,8 +2556,8 @@ void set_window_title(const std::string& str);
 
 //  Some syntactic sugar for adding items to popup menus
 #define POPUPCALLBACK(x) (static_cast<sgl::WindowCallback>(x))
-#define add_menu_item(x, y) _add_menu_item((x), (static_cast<sgl::WindowCallback>(y)));
-#define replace_menu_item(x, y, z) _replace_menu_item((x), (y), (static_cast<sgl::WindowCallback>(z)));
+#define add_menu_item(x, y) m_add_menu_item((x), (static_cast<sgl::WindowCallback>(y)));
+#define replace_menu_item(x, y, z) m_replace_menu_item((x), (y), (static_cast<sgl::WindowCallback>(z)));
 
 
 #endif

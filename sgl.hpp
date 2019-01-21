@@ -2540,12 +2540,12 @@ PopupMenu::PopupMenu(Window *win): window(win) {
 
 PopupMenu::~PopupMenu() {}
 
-void PopupMenu::_add_menu_item(const std::string& item, WindowCallback f) {
+void PopupMenu::m_add_menu_item(const std::string& item, WindowCallback f) {
 	glutAddMenuEntry(item.c_str(), items.size());
 	items.push_back(MenuItem(item, f));
 }
 
-void PopupMenu::_replace_menu_item(const std::string& old_name, 
+void PopupMenu::m_replace_menu_item(const std::string& old_name, 
 		                                const std::string& new_name, 
 								        WindowCallback func) {
     int num_items = items.size();
