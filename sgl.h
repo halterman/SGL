@@ -1003,14 +1003,13 @@ public:
 	/**
 	 *  Adds specifies which method to call for a given menu item.
 	 *  Clients ordinarily will use the add_menu_item macro (no leading
-	 *  "m_" in the name) so a messy type cast is not necessary.
+	 *  "internal_" in the name) so a messy type cast is not necessary.
 	 *  @param item a string listed for the menu choice
 	 *  @param func a method to call when the user selects the given
 	 *              menu item
 	 *  @return nothing
 	 */
-	//virtual void m_add_menu_item(const char *item, WindowCallback func);
-	virtual void m_add_menu_item(const std::string& item, WindowCallback func);
+	virtual void internal_add_menu_item(const std::string& item, WindowCallback func);
 
 	/**
 	 *  Replaces one menu item and its associated handler with another.
@@ -1021,9 +1020,9 @@ public:
 	 *  @param func the replacement handler for this menu item
 	 *  @return nothing
 	 */
-	virtual void m_replace_menu_item(const std::string& old_name, 
+	virtual void internal_replace_menu_item(const std::string& old_name, 
 		                            const std::string& new_name, 
-				  				    WindowCallback func);
+					    WindowCallback func);
 
 	/**
 	 *  Removes a menu item and its associated handler.
@@ -2556,8 +2555,8 @@ void set_window_title(const std::string& str);
 
 //  Some syntactic sugar for adding items to popup menus
 #define POPUPCALLBACK(x) (static_cast<sgl::WindowCallback>(x))
-#define add_menu_item(x, y) m_add_menu_item((x), (static_cast<sgl::WindowCallback>(y)));
-#define replace_menu_item(x, y, z) m_replace_menu_item((x), (y), (static_cast<sgl::WindowCallback>(z)));
+#define add_menu_item(x, y) internal_add_menu_item((x), (static_cast<sgl::WindowCallback>(y)));
+#define replace_menu_item(x, y, z) internal_replace_menu_item((x), (y), (static_cast<sgl::WindowCallback>(z)));
 
 
 #endif
