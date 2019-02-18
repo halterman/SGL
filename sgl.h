@@ -5,7 +5,7 @@
  *  thinly wrapping GLUT.
  *  @author Richard L. Halterman
  *
- *  Copyright (c) 2010-2018, Richard L. Halterman
+ *  Copyright (c) 2010-2019, Richard L. Halterman
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with 
@@ -54,7 +54,7 @@
 
 #include <iostream>
 #include <vector>
-#include <list>
+//#include <list>
 #include <string>
 #include <ctime>
 #include <fstream>
@@ -235,7 +235,7 @@ protected:
     double x_hit_offset;
 	
 	/**  Location of the mouse pointer's y coordinate relative to the graphical
-     *   object's bounding box  */
+      *  object's bounding box  */
 	double y_hit_offset;
 
 	/**  x coordinate of the left-bottom corner of the graphical 
@@ -961,7 +961,11 @@ public:
 };
 
 /** A type for menu item event handling. */
-typedef void (Window::*WindowCallback)();
+//typedef void (Window::*WindowCallback)();
+//using WindowCallback = void (Window::*)();
+//using WindowCallback = std::function<void()>;
+
+using MenuItemFunction = std::function<void()>;
 
 
 /**
@@ -970,15 +974,19 @@ typedef void (Window::*WindowCallback)();
  */
 class PopupMenu {
 protected:
-    /**  The window associated with this popup menu */
-    Window *window;
+    ///**  The window associated with this popup menu */
+    //Window *window;
+	int index;   // The GLUT popup menu index
 
     struct MenuItem {
         //const char *name;
         std::string name;
-        WindowCallback code;
+		int index;
+        //WindowCallback code;
+        MenuItemFunction code;
         //MenuItem(const char *name, WindowCallback code):
-        MenuItem(const std::string& name, WindowCallback code):
+        //MenuItem(const std::string& name, WindowCallback code):
+        MenuItem(const std::string& name, MenuItemFunction code):
               name(name), code(code) {}
     };
 	
@@ -993,7 +1001,8 @@ public:
 	/**
 	 *  Intializes an empty popup menu.
 	 */
-	PopupMenu(Window *win);
+	//PopupMenu(Window *win);
+	PopupMenu();
 
 	/**
 	 *  Destroys a popup menu
@@ -1001,15 +1010,18 @@ public:
 	virtual ~PopupMenu();
 
 	/**
-	 *  Adds specifies which method to call for a given menu item.
-	 *  Clients ordinarily will use the add_menu_item macro (no leading
-	 *  "internal_" in the name) so a messy type cast is not necessary.
+	 *  Specifies which method to call for a given menu item.
+	 *  Clients ordinarily will use the add_menu_item macro 
+	 *  so a messy type cast is no necessary.
 	 *  @param item a string listed for the menu choice
 	 *  @param func a method to call when the user selects the given
 	 *              menu item
 	 *  @return nothing
 	 */
-	virtual void internal_add_menu_item(const std::string& item, WindowCallback func);
+	//virtual void _add_menu_item(const char *item, WindowCallback func);
+	//virtual void internal_add_menu_item(const std::string& item, WindowCallback func);
+	//virtual void internal_add_menu_item(const std::string& item, MenuItemFunction func);
+	virtual void add_menu_item(const std::string& item, MenuItemFunction func);
 
 	/**
 	 *  Replaces one menu item and its associated handler with another.
@@ -1020,9 +1032,10 @@ public:
 	 *  @param func the replacement handler for this menu item
 	 *  @return nothing
 	 */
-	virtual void internal_replace_menu_item(const std::string& old_name, 
-		                            const std::string& new_name, 
-					    WindowCallback func);
+	//virtual void internal_replace_menu_item(const std::string& old_name, 
+	virtual void replace_menu_item(const std::string& old_name, 
+		                                    const std::string& new_name, 
+				  			        	    MenuItemFunction func);
 
 	/**
 	 *  Removes a menu item and its associated handler.
@@ -1042,6 +1055,12 @@ public:
 	 *  @return nothing
 	 */
 	virtual void execute_handler(int n);
+
+	/**
+	 *  Make this popup menu the active popup for its window.
+	 *  @return nothing
+	 */
+	virtual void activate();
 };
 
 /**
@@ -1051,7 +1070,7 @@ public:
 class ObjectWindow: public Window {
 protected:
 	/**  The list of graphical objects contained in this window.  */
-	std::list<GraphicalObject *> object_list;
+	std::vector<GraphicalObject *> object_list;
     GraphicalObject *active_object;
 
 public:
@@ -1108,7 +1127,7 @@ public:
 	ObjectWindow();
 
 	/**
-	 *  Destroys a graphical window object.
+	 *  Destroys an object window object.
 	 */
 	~ObjectWindow();
 
@@ -1198,14 +1217,41 @@ public:
 	void key_pressed(int k, double x, double y) override;
 
 	/**
-	 *  Adds a graphical object to the window.
-	 *  @param obj the graphical object to add to this window
-	 *  @return nothing
+	 * Adds a graphical object to the window.  Clients generally
+	 * call the add method (which calls this method indirectly)
+	 * rather than calling this method directly.  That way the
+	 * the window is responsible for managing the Graphical object's
+	 * memory.
+	 * @param obj the graphical object to add to this window
+	 * @return nothing
 	 */
-	void add(GraphicalObject *obj);
+	void internal_add(GraphicalObject *obj);
+
+	//template <typename T, typename... Args>
+	//inline T *add(Args&&... args);
+
+	/**
+	 * Creates and adds a graphical object to the window.  Clients 
+	 * specify the exact type of the graphical object as the
+	 * template parameter and pass any arguments required by that 
+	 * object's constructor in the parameter list.
+	 * @tparam T the type of graphical object to add to this window
+	 * @param args forwards the method parameters to the graphical object's
+	 * constructor
+	 * @return a pointer to the newly and added created graphical object
+	 */
+	template <typename T, typename... Args>
+	inline T *add(Args&&... args) {
+		// The window owns the pointer to the graphical object
+		T *obj = new T(args...);
+		internal_add(obj);
+		return obj;
+	}
+
 
 	/**  
-	 *  Removes a graphical object from the window.
+	 *  Removes a graphical object from the window.  Frees up the memory held by the
+	 *  graphical object.
 	 *  @param obj the graphical object to remove from the window.
 	 *  @return nothing
 	 */
@@ -1214,7 +1260,7 @@ public:
 	/**
 	 *  Removes all the graphical objects from the list of
 	 *  contained graphical objects.  Frees up the memory 
-	 *  allocated for the object.
+	 *  allocated for the graphical objects.
 	 *  @return nothing
 	 */
 	void remove_all();
@@ -1240,7 +1286,7 @@ public:
      *  @return  an iterator to the begining of the vector of 
      *           graphical objects this window contains.
      */
-    std::list<GraphicalObject *>::iterator begin();
+    std::vector<GraphicalObject *>::iterator begin();
 
     /**
      *  Returns an iterator just past the end of the vector of 
@@ -1248,7 +1294,7 @@ public:
      *  @return  an iterator just past the end of the vector of 
      *           graphical objects this window contains.
      */
-    std::list<GraphicalObject *>::iterator end();
+    std::vector<GraphicalObject *>::iterator end();
 };
 
 
@@ -1267,6 +1313,11 @@ public:
      *  container.
      */
     CompositeObject();
+
+	/*
+	 * The destructor frees up all contained objects.
+	 */
+	~CompositeObject();
 
     /**
      *  Draws each object that makes up the composite
@@ -1288,7 +1339,25 @@ public:
      *  @param obj a pointer to the graphical object to add.
      *  @return nothing.
      */
-    void add(GraphicalObject *obj);
+    void internal_add(GraphicalObject *obj);
+
+	/**
+	 * Creates and adds a graphical object to the composite object.  
+	 * Clients specify the exact type of the graphical object as the
+	 * template parameter and pass any arguments required by that 
+	 * object's constructor in the parameter list.
+	 * @tparam T the type of graphical object to add to this composite object
+	 * @param args forwards the method parameters to the graphical object's
+	 * constructor
+	 * @return a pointer to the newly and added created graphical object
+	 */
+	template <typename T, typename... Args>
+	inline T *add(Args&&... args) {
+		// The window owns the pointer to the graphical object
+		T *obj = new T(args...);
+		internal_add(obj);
+		return obj;
+	}
 };
 
 
@@ -2284,6 +2353,20 @@ void set_line_width(double width);
 template <typename T, typename... Args>
 inline void run(Args&&... args);
 
+/**
+ *  Creates an SGL window of type T passing the arguments
+ *  found in the Args parameter to the window's constructor.
+ *  Does NOT call the window's run method to start the application.
+ *  @tparam T the type of SGL window to create
+ *  @tparam Args the argument pack to pass to the window's constructor
+ *  @param args the instantiated parameters to pass to the
+ *  window's constructor
+ */
+template <typename T, typename... Args>
+inline T *make_window(Args&&... args);
+
+
+
 /****************************************************
  *   Miscellaneous utility functions
  ****************************************************/
@@ -2429,21 +2512,22 @@ void pause(int msec);
  */
 bool equals(double d1, double d2, double delta);
 
-/**
- *  Converts an integer to a string so it can be displayed
- *  with draw_text.
- *  @param i the integer to convert
- *  @return the string representation of i
- */
-std::string to_string(int i);
-
-/**
- *  Converts a double to a string so it can be displayed
- *  with draw_text.
- *  @param d the double to convert
- *  @return the string representation of d
- */
-std::string to_string(double d);
+// Modern C++ provides standard functions for these:
+///**
+// *  Converts an integer to a string so it can be displayed
+// *  with draw_text.
+// *  @param i the integer to convert
+// *  @return the string representation of i
+// */
+//std::string to_string(int i);
+//
+///**
+// *  Converts a double to a string so it can be displayed
+// *  with draw_text.
+// *  @param d the double to convert
+// *  @return the string representation of d
+// */
+//std::string to_string(double d);
 
 
 /**
@@ -2553,10 +2637,12 @@ void set_window_title(const std::string& str);
 
 }  //  End of namespace sgl
 
-//  Some syntactic sugar for adding items to popup menus
-#define POPUPCALLBACK(x) (static_cast<sgl::WindowCallback>(x))
-#define add_menu_item(x, y) internal_add_menu_item((x), (static_cast<sgl::WindowCallback>(y)));
-#define replace_menu_item(x, y, z) internal_replace_menu_item((x), (y), (static_cast<sgl::WindowCallback>(z)));
+//////  Some syntactic sugar for adding items to popup menus
+////#define POPUPCALLBACK(x) (static_cast<sgl::WindowCallback>(x))
+////#define add_menu_item(x, y) internal_add_menu_item((x), (static_cast<sgl::WindowCallback>(y)));
+//#define add_menu_item(x, y) internal_add_menu_item((x), (y));
+////#define replace_menu_item(x, y, z) internal_replace_menu_item((x), (y), (static_cast<sgl::WindowCallback>(z)));
+//#define replace_menu_item(x, y, z) internal_replace_menu_item((x), (y), (z));
 
 
 #endif

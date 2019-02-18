@@ -5,9 +5,9 @@
  *  thinly wrapping GLUT.
  *  @author Richard L. Halterman
  *
- *  Last modified 2018-07-29
+ *  Last modified 2019-02-17
  *
- *  Copyright (c) 2010-2018, Richard L. Halterman
+ *  Copyright (c) 2010-2019, Richard L. Halterman
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with 
@@ -59,11 +59,12 @@
     #pragma warning(push, 3)
 #endif
 
-#include <sstream>
+//#include <sstream>
 #include <cmath>
 #include <cstdlib>  //  Linux requires cstdlib for exit and rand functions
-#include <cstring>
-#include <memory>
+//#include <cstring>
+//#include <memory>
+#include <algorithm>
 #include <GL/sgl.h>
 #ifdef __APPLE__
 #include <GLUT/glut.h>
@@ -77,7 +78,7 @@
  */
 namespace sgl {
 
-static const std::string SGL_VERSION_NUMBER = "0.9.2 (July 29, 2018)";
+static const std::string SGL_VERSION_NUMBER = "0.9.5 (February 17, 2019)";
 
 
 static bool glut_active = false;
@@ -85,12 +86,24 @@ static bool event_loop_running = false;
 
 
 
-//static Window *current_window = 0;  //  Current window intially null
+//static Window *current_window = nullptr;  //  Current window intially null
 
 //  Maximum number of windows managed by SGL
 const int MAX_WINDOWS = 10;
 //  List of windows managed by SGL
-static Window *window_list[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static Window *window_list[] = { 
+	nullptr, // Index 0 is unused 
+	nullptr, 
+	nullptr, 
+	nullptr, 
+	nullptr, 
+	nullptr, 
+	nullptr, 
+	nullptr, 
+	nullptr, 
+	nullptr, 
+	nullptr 
+};
 
 //  Some coordinate conversion helper functions
 static void GetOGLPos(int x, int y, double *vec) {
@@ -388,8 +401,8 @@ Window::Window() {
 }
 
 Window::~Window() {
-	//current_window = 0;
-	window_list[glutGetWindow()] = 0;
+	//current_window = nullptr;
+	window_list[glutGetWindow()] = nullptr;
 	//object_list.clear();
 }
 
@@ -487,13 +500,13 @@ void Window::run() {
 void Window::draw_axes(double x_inc, double y_inc) const {
     //  Draw grid lines at 10 unit increments
     glColor3d(0.9, 0.9, 1.0);  // Light blue
-    for ( double x = 0 + x_inc; x < max_x; x += x_inc )
+    for (double x = 0 + x_inc; x < max_x; x += x_inc)
         draw_line(x, min_y, x, max_y);
-    for ( double y = 0 + y_inc; y < max_y; y += y_inc )
+    for (double y = 0 + y_inc; y < max_y; y += y_inc)
         draw_line(min_x, y, max_x, y);
-    for ( double x = -x_inc; x > min_x; x -= x_inc )
+    for (double x = -x_inc; x > min_x; x -= x_inc)
         draw_line(x, min_y, x, max_y);
-    for ( double y = -y_inc; y > min_y; y -= y_inc )
+    for (double y = -y_inc; y > min_y; y -= y_inc)
         draw_line(min_x, y, max_x, y);
     //  Draw axes
     glColor3d(0.0, 0.0, 0.0);   //  Black
@@ -633,7 +646,7 @@ void Window::key_pressed(int key, double, double) {
 		//else
 		//{
 		//	int window_to_close = glutGetWindow();
-		//	window_list[window_to_close] = 0;  //  Nullify window
+		//	window_list[window_to_close] = nullptr;  //  Nullify window
 		//	std::cout << "Window to close: " << window_to_close << '\n';
 		//	glutSetWindow(1);  //  Reset current window to main window
 		//	std::cout << "Current window is now: " << glutGetWindow() << '\n';
@@ -686,25 +699,26 @@ ObjectWindow::ObjectWindow(const std::string& title,
                                 double min_y, double max_y):
                 Window(title, left, top, width, height,
                        min_x, max_x, min_y, max_y),
-                active_object(0) {}
+                active_object(nullptr) {}
 
 ObjectWindow::ObjectWindow(const std::string& title, 
                                 int width, int height):
                 Window(title, width, height),
-                active_object(0) {}
+                active_object(nullptr) {}
 
 ObjectWindow::ObjectWindow(const std::string& title, 
                                 double min_x, double max_x, 
                                 double min_y, double max_y):
                 Window(title, min_x, max_x, min_y, max_y),
-                active_object(0) {}
+                active_object(nullptr) {}
 
 ObjectWindow::ObjectWindow(): Window() {}
 
 
 ObjectWindow::~ObjectWindow() {
-	window_list[glutGetWindow()] = 0;
-	object_list.clear();
+	window_list[glutGetWindow()] = nullptr;
+	remove_all();  // Remove and delete all contained graphical objects
+	//object_list.clear();
 }
 
 void ObjectWindow::prepaint() {
@@ -712,14 +726,12 @@ void ObjectWindow::prepaint() {
 }
 
 void ObjectWindow::postpaint() {
-	//list<GraphicalObject *>::const_iterator p;
-    for (auto p = object_list.begin(); p != object_list.end(); p++ )
-        (*p)->paint();
+    for (auto& p : object_list)
+        p->paint();
     Window::postpaint();
 }
 
-void ObjectWindow::mouse_pressed(double x, double y, 
-                                      MouseButton button) {
+void ObjectWindow::mouse_pressed(double x, double y, MouseButton button) {
     if (active_object) {
         active_object->mouse_pressed(x, y, button);
         repaint();
@@ -770,7 +782,7 @@ void ObjectWindow::key_pressed(int key, double x, double y) {
 
 
 // Add the given graphical object obj to the display list
-void ObjectWindow::add(GraphicalObject *obj) {
+void ObjectWindow::internal_add(GraphicalObject *obj) {
     //std::cout << "In add" << '\n';
     //std::cout << static_cast<void *>(obj) << '\n';
     //std::cout << static_cast<void *>(this) << '\n';
@@ -778,19 +790,25 @@ void ObjectWindow::add(GraphicalObject *obj) {
 	obj->set_window(this);
 }
 
-//  Remove the given graphical object obj from the display list
+
+// Remove the given graphical object obj from the display list and 
+// deallocate the removed graphical object.
 void ObjectWindow::remove(GraphicalObject *obj) {
-    object_list.remove(obj);
+	object_list.erase(std::remove(object_list.begin(), object_list.end(), obj), object_list.end());
+    //object_list.remove(obj);
+	if (active_object == obj)
+		active_object = nullptr;
+	delete obj;
 	repaint();
 }
 
 //  Remove all the graphical objects from the display list
 //  Frees up the memory allocated for the object
 void ObjectWindow::remove_all() {
-	for (auto p = object_list.begin(); p != object_list.end(); p++)
-        delete *p;
+	for (auto& p : object_list)
+        delete p;
     object_list.clear();
-	active_object = 0;
+	active_object = nullptr;
 	repaint();
 }
 
@@ -810,7 +828,7 @@ GraphicalObject *ObjectWindow::hit(double x, double y) const {
  *  @return  an iterator to the begining of the vector of 
  *           graphical objects this window contains.
  */
-std::list<GraphicalObject *>::iterator ObjectWindow::begin() {
+std::vector<GraphicalObject *>::iterator ObjectWindow::begin() {
     return object_list.begin();
 }
 
@@ -820,7 +838,7 @@ std::list<GraphicalObject *>::iterator ObjectWindow::begin() {
  *  @return  an iterator just past the end of the vector of 
  *           graphical objects this window contains.
  */
-std::list<GraphicalObject *>::iterator ObjectWindow::end() {
+std::vector<GraphicalObject *>::iterator ObjectWindow::end() {
     return object_list.end();
 }
 
@@ -1095,6 +1113,15 @@ CompositeObject::CompositeObject():
      GraphicalObject(0.0, 0.0, 0.0, 0.0), 
      objects(0) {}
 
+/*
+	 * The destructor frees up all contained objects.
+	 */
+CompositeObject::~CompositeObject() {
+	for (auto& obj : objects)
+		delete obj;
+}
+
+
 /**
  *  Draws each object that makes up the composite
  *  object.
@@ -1105,8 +1132,8 @@ void CompositeObject::paint() const {
     set_color(BLUE);
     draw_rectangle(left, bottom, width, height);
     //  Draw each object in this container
-    for (auto iter = objects.begin(); iter != objects.end(); ++iter)
-        (*iter)->paint();
+    for (auto& obj : objects)
+        obj->paint();
 }
 
 /**
@@ -1118,19 +1145,20 @@ void CompositeObject::move_to(double x, double y) {
     double old_left = left, old_bottom = bottom;
     GraphicalObject::move_to(x, y);
     double dx = left - old_left, dy = bottom - old_bottom;
-    for (auto iter = objects.begin(); iter != objects.end(); ++iter) {
-        GraphicalObject *obj = *iter; 
+    for (auto& obj : objects) {
         obj->move_to(obj->get_left() + dx, obj->get_bottom() + dy);
     }
 }
 
 /**
  *  Adds a graphical object to this container.  Adjusts
- *  the container's size accordingly.
+ *  the container's size accordingly.  Clients ordinarily call 
+ *  add method instead; the add method allocates space for the added
+ *  object and relieves the client of memory management.
  *  @param obj a pointer to the graphical object to add.
  *  @return nothing.
  */
-void CompositeObject::add(GraphicalObject *obj) {
+void CompositeObject::internal_add(GraphicalObject *obj) {
     //  Adjust this container's size, if necessary
     //  to accommodate the new element.
     if (objects.size() == 0) {  //  Add first element
@@ -2313,7 +2341,7 @@ GraphicalObject::GraphicalObject(double lf, double bm,
 						   width(wd), height(ht), 
                            cursor(CursorShape::Crosshair),
                            mouse_over(false), id(id_source++) {
-	//std::cout << "Making a graphical object: ";
+	std::cout << "Making a graphical object #" << id << '\n';;
 	//std::cout << "left = " << left << ", bottom = " << bottom << '\n';
 }
 
@@ -2339,7 +2367,7 @@ GraphicalObject& GraphicalObject::operator=
 
 //  Destructor currently does nothing
 GraphicalObject::~GraphicalObject() {
-	//std::cout << "Destroying graphical object #" << id << '\n';
+	std::cout << "Destroying graphical object #" << id << '\n';
 }
 
 
@@ -2525,29 +2553,30 @@ unsigned GraphicalObject::id_source = 0;
 static PopupMenu *current_popup_menu = nullptr;
 
 void PopupMenu::execute_handler(int n) {
-	(window->*(items[n].code))();
+	(items[n].code)();
 }
 
 void PopupMenu::process_menu_events(int option) {
 	current_popup_menu->execute_handler(option);
 }
 
-PopupMenu::PopupMenu(Window *win): window(win) {
-	glutCreateMenu(PopupMenu::process_menu_events);
+PopupMenu::PopupMenu() {
+	index = glutCreateMenu(PopupMenu::process_menu_events);
 	current_popup_menu = this;
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
 PopupMenu::~PopupMenu() {}
 
-void PopupMenu::m_add_menu_item(const std::string& item, WindowCallback f) {
+void PopupMenu::add_menu_item(const std::string& item, MenuItemFunction f) {
 	glutAddMenuEntry(item.c_str(), items.size());
 	items.push_back(MenuItem(item, f));
 }
 
-void PopupMenu::m_replace_menu_item(const std::string& old_name, 
+void PopupMenu::replace_menu_item(const std::string& old_name, 
 		                                const std::string& new_name, 
-								        WindowCallback func) {
+								        //WindowCallback func) {
+								        MenuItemFunction func) {
     int num_items = items.size();
     MenuItem new_item(new_name, func);
     for (int i = 0; i < num_items; i++)
@@ -2563,6 +2592,16 @@ void PopupMenu::m_replace_menu_item(const std::string& old_name,
 void PopupMenu::remove_menu_item(const std::string&  /* item */) {
 	std::cout << "remove_menu_item unimplemented at this time\n";
     //  Find index of current . . . 
+}
+
+/**
+	 *  Make this popup menu the active popup for its window.
+	 *  @return nothing
+	 */
+void PopupMenu::activate() {
+	current_popup_menu = this;
+	glutSetMenu(index);
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
 
@@ -2739,8 +2778,8 @@ void fill_circle(double x, double y, double radius) {
 //  Draws a polygon
 void draw_polygon(const std::vector<Point>& pts) {
 	glBegin(GL_LINE_LOOP);
-	for (auto iter = pts.begin(); iter != pts.end(); iter++)
-		glVertex2d(iter->x, iter->y);
+	for (auto& p : pts)
+		glVertex2d(p.x, p.y);
 	glEnd();
 }
 
@@ -2766,8 +2805,8 @@ void draw_polygon(const Point *pts, int n) {
 //  Draw a filled polygon
 void fill_polygon(const std::vector<Point>& pts) {
 	glBegin(GL_POLYGON);
-	for (auto iter = pts.begin(); iter != pts.end(); iter++)
-		glVertex2d(iter->x, iter->y);
+	for (auto& p : pts)
+		glVertex2d(p.x, p.y);
 	glEnd();
 }
 
@@ -2783,7 +2822,7 @@ void fill_polygon(const std::vector<Point>& pts) {
  */
 void fill_polygon(const Point *pts, int n) {
 	glBegin(GL_POLYGON);
-	for ( int i = 0; i < n; i++ )
+	for (int i = 0; i < n; i++)
 		glVertex2d(pts[i].x, pts[i].y);
 	glEnd();
 }
@@ -2887,6 +2926,20 @@ inline void run(Args&&... args) {
     T{args...}.run();
 }
 
+/**
+ *  Creates an SGL window of type T passing the arguments
+ *  found in the Args parameter to the window's constructor.
+ *  Does NOT call the window's run method to start the application.
+ *  @tparam T the type of SGL window to create
+ *  @tparam Args the argument pack to pass to the window's constructor
+ *  @param args the instantiated parameters to pass to the
+ *  window's constructor
+ *  @return a pointer to the newly created window object.
+ */
+template <typename T, typename... Args>
+inline T *make_window(Args&&... args) {
+	return new T(args...);
+}
 
 /****************************************
  *  Utility functions
@@ -2994,35 +3047,36 @@ bool equals(double d1, double d2, double delta) {
     return d1 == d2 || fabs(d1 - d2) < delta;
 }
 
-static std::ostringstream __to_string_stream;
-static std::string __to_string_buffer;
-
-/**
- *  Converts an integer to a string so it can be displayed
- *  with draw_text.
- *  @param i the integer to convert
- *  @return the string representation of i
- */
-std::string to_string(int i) {
-    __to_string_stream.str("");
-    __to_string_stream << i;
-    __to_string_buffer = __to_string_stream.str();
-    return __to_string_buffer; // .c_str();
-
-}
-
-/**
- *  Converts a double to a string so it can be displayed
- *  with draw_text.
- *  @param d the double to convert
- *  @return the string representation of d
- */
-std::string to_string(double d) {
-    __to_string_stream.str("");
-    __to_string_stream << d;
-    __to_string_buffer = __to_string_stream.str();
-    return __to_string_buffer; // .c_str();
-}
+// Modern C++ provides standard functions for these:
+//static std::ostringstream internal_to_string_stream;
+//static std::string internal_to_string_buffer;
+//
+///**
+// *  Converts an integer to a string so it can be displayed
+// *  with draw_text.
+// *  @param i the integer to convert
+// *  @return the string representation of i
+// */
+//std::string to_string(int i) {
+//    internal_to_string_stream.str("");
+//    internal_to_string_stream << i;
+//    internal_to_string_buffer = internal_to_string_stream.str();
+//    return internal_to_string_buffer; // .c_str();
+//
+//}
+//
+///**
+// *  Converts a double to a string so it can be displayed
+// *  with draw_text.
+// *  @param d the double to convert
+// *  @return the string representation of d
+// */
+//std::string to_string(double d) {
+//    internal_to_string_stream.str("");
+//    internal_to_string_stream << d;
+//    internal_to_string_buffer = internal_to_string_stream.str();
+//    return internal_to_string_buffer; // .c_str();
+//}
 
 
 //-----------------------------------------------------------------------------------------
@@ -3080,7 +3134,8 @@ public:
 
 
 // Global window used by the procedural code
-static std::shared_ptr<ProceduralWindow> global_procedural_window;
+//static std::shared_ptr<ProceduralWindow> global_procedural_window;
+static ProceduralWindow *global_procedural_window;
 
 static void exit_error(const std::string& message) {
     std::cout << message << '\n';
@@ -3090,7 +3145,8 @@ static void exit_error(const std::string& message) {
 void create_window(const std::string& title, int x, int y, int width, int height) {
     if (global_procedural_window)
         exit_error("An application can create only one graphics window");
-    global_procedural_window = std::make_shared<ProceduralWindow>(title, x, y, width, height);
+    //global_procedural_window = std::make_shared<ProceduralWindow>(title, x, y, width, height);
+    global_procedural_window = make_window<ProceduralWindow>(title, x, y, width, height);
 }
 
 void run_window() {
