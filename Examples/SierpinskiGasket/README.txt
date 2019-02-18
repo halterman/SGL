@@ -1,0 +1,1 @@
+The cursor keys increase or decrease the number of levels.
